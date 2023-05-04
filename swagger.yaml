@@ -17,10 +17,52 @@ tags:
     description: All APIs related to admin
   - name: auth
     description: All APIs related to authentication
+  - name: company
+    description: All APIs related to companies
   - name: dashboard
-    description: All APIs related to authentication
+    description: All APIs related to dashboard
+  - name: program
+    description: All APIs related to programs
+  - name: user
+    description: All APIs related to regular users
+  - name: volunteer
+    description: All APIs related to volunteers
 paths:
   # ADMIN
+  /admin/user/{userId}:
+    patch:
+      tags:
+        - admin
+      summary: Get user info
+      description: Allows ADMINS to get all user secure data
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+            example: 1
+      responses:
+        '200':
+          description: Get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    allOf:
+                      - $ref: '#/components/schemas/UserSecureData'
+                      - type: object
+                        properties:
+                          company:
+                            $ref: '#/components/schemas/Company'
+        '400':
+          description: User not found
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
   /admin/modifyUserRole:
     patch:
       tags:
@@ -115,7 +157,7 @@ paths:
       tags:
         - "auth"
       summary: "Authenticates the user"
-      description: "Authenticate the user returning a bearer token"
+      description: "Authenticate the user returning a bearer token & a refresh token"
       operationId: "signIn"
       requestBody:
         content:
@@ -142,7 +184,48 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
+                    type: string
+                    description: "Bearer Token"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjgxOTQ5ODE1LCJleHAiOjE2ODE5NTM0MTV9.m3lkgvjS3e8MqZjUlG-Mplku4VAze1vPNFSJkX5CFiQ"
+                  refreshToken:
+                    type: string
+                    description: "Bearer Token"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjgxOTQ5ODE1LCJleHAiOjE2ODE5NTM0MTV9.m3lkgvjS3e8MqZjUlG-Mplku4VAze1vPNFSJkX5CFiQ"
+        '401':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+  /auth/refreshToken:
+    post:
+      tags:
+        - "auth"
+      summary: "Refresh users access token"
+      description: "Validate refresh token returning a new bearer token & a new refresh token"
+      operationId: "refreshToken"
+      parameters:
+        - in: header
+          name: RefreshToken
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: User authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: "Bearer Token"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjgxOTQ5ODE1LCJleHAiOjE2ODE5NTM0MTV9.m3lkgvjS3e8MqZjUlG-Mplku4VAze1vPNFSJkX5CFiQ"
+                  refreshToken:
                     type: string
                     description: "Bearer Token"
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjgxOTQ5ODE1LCJleHAiOjE2ODE5NTM0MTV9.m3lkgvjS3e8MqZjUlG-Mplku4VAze1vPNFSJkX5CFiQ"
@@ -271,6 +354,50 @@ paths:
         '500':
           description: Internal server error
 
+  # COMPANY
+  /company:
+    post:
+      tags:
+        - company
+      summary: 'Allows admin users to create a new company'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  example: '123441'
+                name:
+                  type: string
+                  example: 'Itau'
+        required: true
+      responses:
+        '201':
+          description: Company created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'Application created'
+                  id:
+                    type: number
+                    example: 1
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+
   # DASHBOARD
   /dashboard:
     get:
@@ -288,6 +415,422 @@ paths:
                   - $ref: '#/components/schemas/VolunteerDashboard'
       security:
         - bearer_token: []
+
+  # PROGRAM
+  /program:
+    get:
+      tags:
+        - program
+      summary: Get all programs available for user company
+      parameters:
+        - in: query
+          name: PAGE
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: PER_PAGE
+          schema:
+            type: integer
+            maximum: 100
+      responses:
+        '200':
+          description: Successfully retrieved program
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                      example: 1
+                    name:
+                      type: string
+                      example: 'Programa social 1'
+                    description:
+                      type: string
+                      example: 'Programa de teste'
+                    startDate:
+                      type: string
+                      example: '2023-05-01T03:00:00.000Z'
+                    endDate:
+                      type: string
+                      example: '2024-05-01T03:00:00.000Z'
+                    createdAt:
+                      type: string
+                      example: '2023-05-01T03:00:00.000Z'
+                    updatedAt:
+                      type: string
+                      example: '2023-05-01T03:00:00.000Z'
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+    post:
+      tags:
+        - program
+      summary: Create new program
+      description: Allows a company employee or an admin to create a new program 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: number
+                  example: 1
+                name:
+                  type: string
+                  example: 'Program de teste'
+                description:
+                  type: string
+                  example: 'Program de teste description'
+                startDate:
+                  type: string
+                  format: date
+                  example: '2023-05-01'
+                endDate:
+                  type: string
+                  format: date
+                  example: '2024-05-01'
+      responses:
+        '201':
+          description: 'Program created successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'Program created'
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /{programId}/applications/socialOrganizations:
+    get:
+      tags:
+        - program
+      summary: 'List program social organization applications'
+      description: 'Allow company employees and admins to see applicants'
+      parameters:
+        - in: path
+          name: programId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: 'List social organization applicants'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    applications:
+                      $ref: '#/components/schemas/MentorshipApplication'
+        '403':
+          description: 'User not authorized to access program data'
+        '500':
+          description: 'Internal server error'
+      security:
+        - bearer_token: []
+  /{programId}/applications/volunteers:
+    get:
+      tags:
+        - program
+      summary: 'List program volunteers applications'
+      description: 'Allow company employees and admins to see applicants'
+      parameters:
+        - in: path
+          name: programId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: 'List program volunteers applications'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    applications:
+                      $ref: '#/components/schemas/VolunteerApplication'
+        '403':
+          description: 'User not authorized to access program data'
+        '500':
+          description: 'Internal server error'
+      security:
+        - bearer_token: []
+  
+  # USER
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get current user information
+      description: Get current user information using authentication Token
+      operationId: getUserInfo
+      responses:
+        '200':
+          description: Successfully get user information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    allOf:
+                      - $ref: '#/components/schemas/UserSecureData'
+                      - type: object
+                        properties:
+                          role:
+                            $ref: '#/components/schemas/Role'
+      security:
+        - bearer_token: []
+  /user/onboarding:
+    patch:
+      tags:
+        - user
+      summary: Patch user onboarding data
+      description: Patch current user onboarding data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyCode:
+                  type: string
+                  example: Itau
+                birthdate:
+                  type: string
+                  format: date
+                  example: '1990-01-01'
+                gender:
+                  type: string
+                  example: Masculino
+                country:
+                  type: string
+                  example: Brasil
+                state:
+                  type: string
+                  example: São Paulo
+                city:
+                  type: string
+                  example: Carapicuiba
+        required: true
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'User updated successfully'
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+  /user/volunteering:
+    patch:
+      tags:
+        - user
+      summary: Patch user volunteering data
+      description: Patch current user volunteering data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                professionalExperience:
+                  type: number
+                  example: 10.6
+                professionalSector:
+                  type: string
+                  example: 'IT'
+                professionalRole:
+                  type: string
+                  example: 'Desenvolvedor de Software'
+                availableTime:
+                  type: number
+                  example: 4
+                linkedinUrl:
+                  type: string
+                  example: 'https://linkedin.com/in/joaodasilvafernandes1323'
+                professionalPreviousExperiences:
+                  type: string 
+                  example: |-
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    Aliquam tempor massa diam, et fringilla enim sollicitudin ac.
+                    Aliquam at lectus facilisis, varius nisl semper, dapibus massa
+                mainCompetencies:
+                  type: string
+                  example: 'Sou ótimo com números'
+                reasonToJoin:
+                  type: string
+                  example: 'Sou caridoso'
+                previousMentorship:
+                  type: string
+                  example: 'Nunca fiz nada assim antes'
+                sectorIds:
+                  description: 'Knowledge areas selected by the user'
+                  type: array
+                  example: 
+                    - 1
+                    - 2
+                    - 3
+                  items:
+                    type: number
+                    minimum: 3
+                    maximum: 3
+        required: true
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'User updated successfully'
+        '400':
+          description: Body validation error
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+
+  # VOLUNTEER
+  /volunteer/apply:
+    post:
+      tags:
+        - volunteer
+      summary: Creates volunteer application for program
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                agreed:
+                  type: boolean
+                  description: Flag that informs if user agreed with terms
+                agreedAt:
+                  type: string
+                  format: 'date-time'
+                programId:
+                  type: number
+                  example: 1
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file containing terms & conditions assigned by the user
+        required: true
+      responses:
+        '201':
+          description: Volunteer application created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'Application created'
+                  id:
+                    type: number
+                    example: 1
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+  /volunteer/prefferedRoles:
+    patch:
+      tags:
+        - volunteer
+      summary: Update preferred voluntering roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicationId:
+                  type: number
+                  example: 1
+                  enum:
+                    - 1
+                    - 2
+                    - 3
+                firstRole:
+                  type: number
+                  example: 1
+                  enum:
+                    - 1
+                    - 2
+                    - 3
+                secondRole:
+                  type: number
+                  example: 2
+                  enum:
+                    - 1
+                    - 2
+                    - 3
+                thirdRole:
+                  type: number
+                  example: 3
+                  enum:
+                    - 1
+                    - 2
+                    - 3
+        required: true
+      responses:
+        '201':
+          description: Preferred volunteer roles patched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    default: 'Roles defined successfully'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error 
+      security:
+        - bearer_token: []   
+        
 components:
   schemas:
     Error:
@@ -295,7 +838,42 @@ components:
       properties:
         message:
           type: string
-          description: "Message describing the error"
+          description: 'Message describing the error'
+    Company:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+          example: 'Itau'
+        code:
+          type: string
+          example: '123441'
+        logo:
+          $ref: '#/components/schemas/Storage'
+    MentorshipApplication:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        hasAgreedToConditions:
+          type: number
+          example: true
+        agreedToConditionsAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        createdAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        updatedAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
     Program:
       type: object
       properties:
@@ -316,6 +894,15 @@ components:
           type: string
           format: date
           example: '2024-04-23'
+    Role:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        role:
+          type: string
+          example: 'admin'
     Storage:
       type: object
       properties:
@@ -430,6 +1017,42 @@ components:
                     example: true
         user:
           $ref: '#/components/schemas/UserSecureData'
+    VolunteerApplication:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        program:
+          type: number
+          example: 1
+        user:
+          type: number
+          example: 1
+        firstRole:
+          type: number
+          example: 1
+        secondRole:
+          type: number
+          example: 2
+        thirdRole:
+          type: number
+          example: 3
+        hasAgreedToConditions:
+          type: boolean
+          example: true
+        agreedToConditionsAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        createdAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        updatedAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
   securitySchemes:
     bearer_token:
       type: http
