@@ -11,7 +11,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 0.0.1-beta001
 servers:
-  - url: http://18.222.112.130:8080/api
+  - url: https://cosmos-social.cyclic.app/api
 tags:
   - name: admin
     description: All APIs related to admin
