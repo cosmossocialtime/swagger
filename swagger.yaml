@@ -21,16 +21,21 @@ tags:
     description: All APIs related to companies
   - name: dashboard
     description: All APIs related to dashboard
+  - name: mentorship
+    description: All APIs related to mentorships
   - name: program
     description: All APIs related to programs
+  - name: socialOrganization
+    description: All APIs related to social organizations 
   - name: user
     description: All APIs related to regular users
   - name: volunteer
     description: All APIs related to volunteers
+
 paths:
   # ADMIN
   /admin/user/{userId}:
-    patch:
+    get:
       tags:
         - admin
       summary: Get user info
@@ -59,6 +64,52 @@ paths:
                             $ref: '#/components/schemas/Company'
         '400':
           description: User not found
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
+  /admin/company:
+    post:
+      tags:
+        - admin
+      summary: Create a company
+      description: Allow admin users to create a company
+      operationId: createCompany
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - code
+                - name
+              properties:
+                code:
+                  type: string
+                  example: 012345
+                  description: Unique identifier for the company
+                name:
+                  type: string
+                  example: 'Itau'
+        required: true
+      responses:
+        '201':
+          description: Company created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: "Company ID"
+                    example: 1
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
       security:
@@ -237,7 +288,7 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
-  /auth/verifyUser:
+  /auth/verify:
     patch:
       tags:
         - auth
@@ -266,7 +317,7 @@ paths:
         '403':
           description: Token is invalid
   /auth/resendVerification:
-    patch:
+    post:
       tags:
         - auth
       summary: Resend verification email
@@ -329,7 +380,7 @@ paths:
         '500':
           description: Internal server error
   /auth/forgotPassword:
-    patch:
+    post:
       tags:
         - auth
       summary: Send a forgot password email to user
@@ -354,50 +405,6 @@ paths:
         '500':
           description: Internal server error
 
-  # COMPANY
-  /company:
-    post:
-      tags:
-        - company
-      summary: 'Allows admin users to create a new company'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                code:
-                  type: string
-                  example: '123441'
-                name:
-                  type: string
-                  example: 'Itau'
-        required: true
-      responses:
-        '201':
-          description: Company created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    default: 'Application created'
-                  id:
-                    type: number
-                    example: 1
-        '400':
-          description: Invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-      security:
-        - bearer_token: []
-
   # DASHBOARD
   /dashboard:
     get:
@@ -416,6 +423,411 @@ paths:
       security:
         - bearer_token: []
 
+  # MENTORSHIP
+  /mentorship/{mentorshipId}/calendar:
+    get:
+      tags:
+        - mentorship
+      summary: List calendar for mentorship
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+        - in: query
+          name: START_DATE
+          schema:
+            type: string
+            format: date
+            example: 2023-05-18
+        - in: query
+          name: END_DATE
+          schema:
+            type: string
+            format: date
+            example: 2023-05-18
+      responses:
+        '200':
+          description: Successfully retrieved mentorship calendar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 1
+                        title:
+                          type: string
+                          example: 'Reunião para discutir próximos passos'
+                        description:
+                          type: string
+                          example: |-
+                            Nessa reunião serão discutidos os seguintes pontos:
+                              - Regras de negócio
+                              - Jurídico
+                              - Porque o dev demorou pra fazer o swagger
+                        link:
+                          type: string
+                          format: url
+                          example: https://meet.google.com/xxx-yyy-zzz
+                        eventAt:
+                          type: string
+                          example: '2023-06-01T03:00:00.000Z'
+                        createdAt:
+                          type: string
+                          example: '2024-05-01T03:00:00.000Z'
+                        updatedAt:
+                          type: string
+                          example: '2023-05-01T03:00:00.000Z'
+                        attendees:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/MentorshipEventAttendee'
+      security:
+        - bearer_token: []
+  /mentorship/{mentorshipId}/event:
+    post:
+      tags:
+        - mentorship
+      summary: Create a new goal to a mentorship
+      operationId: "createEvent"
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Metas da próxima semana"
+                description:
+                  type: string
+                  example: "Nessa reunião definiremos as metas da próxima semana, além de discutirmos os pontos positivos e negativos da semana que passou"
+                link:
+                  type: string
+                  format: url
+                  example: "https://meet.google.com/xxx-yyy-zzz"
+                eventAt:
+                  type: string
+                  format: 'date-time'
+                  example: '2023-05-28T12:00:00:000Z'
+                attendees:
+                  type: array
+                  description: 'Array containing the userId from all attendees'
+                  minItems: 1
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                        example: 1
+              required:
+                - title
+                - description
+                - link
+                - eventAt
+                - attendees
+      responses:
+        '200':
+          description: Goal created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /mentorship/{mentorshipId}/goals:
+    get:
+      tags:
+        - mentorship
+      summary: List goals for mentorship
+      operationId: "listGoals"
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: Successfully retrieved mentorship goals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          example: 1
+                        name:
+                          type: string
+                          example: 'Objetivos 1'
+                        createdAt:
+                          type: string
+                          example: '2024-05-01T03:00:00.000Z'
+                        updatedAt:
+                          type: string
+                          example: '2023-05-01T03:00:00.000Z'
+                        tasks:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/MentorshipGoalTask'
+      security:
+        - bearer_token: []
+    post:
+      tags:
+        - mentorship
+      summary: Create a new goal to a mentorship
+      operationId: "createGoal"
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Goal created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /mentorship/{mentorshipId}/volunteers:
+    get:
+      tags:
+        - mentorship
+      summary: List goals for mentorship
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: Successfully retrieved mentorship goals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          description: Volunteer ID
+                          example: 1
+                        userId:
+                          type: number
+                          description: User ID
+                          example: 1
+                        byname:
+                          type: string
+                          example: 'João'
+                        profilePicture:
+                          type: string
+                          format: url
+                          example: null
+                          description: User profile picture pre-signed URL with expiration
+                        banner:
+                          type: string
+                          format: url
+                          example: null
+                          description: User banner pre-signed URL with expiration
+                        professionalPreviousExperiences:
+                          type: string
+                          example: |-
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                            Aliquam tempor massa diam, et fringilla enim sollicitudin ac.
+                            Aliquam at lectus facilisis, varius nisl semper, dapibus massa
+                        mainCompetencies:
+                          type: string
+                          example: "Sou ótimo com números"
+                        reasonToJoin:
+                          type: string
+                          example: "Sou caridoso"
+                        previousMentorship:
+                          type: string
+                          example: "Nunca fiz nada antes"
+                        roleId:
+                          type: number
+                          example: 1
+                          description: Volunteer Role ID
+                        role:
+                          type: string
+                          example: "specialist"
+                        knowledgeAreas:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/KnowledgeAreas'
+      security:
+        - bearer_token: []
+  /mentorship/goal/{goalId}/task:
+    post:
+      tags:
+        - mentorship
+      summary: "Creates a new task to a mentorship goal"
+      operationId: "createTask"
+      parameters:
+        - in: path
+          name: goalId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Escrever relatório financeiro"
+              required:
+                - name
+      responses:
+        '200':
+          description: 'Task created successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /mentorship/task/{taskId}/completed:
+    patch:
+      tags:
+        - mentorship
+      summary: 'Changes the "complete" status of a task'
+      description: 'This API uses the current user to mark as the task completer'
+      parameters:
+        - in: path
+          name: taskId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                completed:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: 'Completion status changed successfully'
+      security:
+        - bearer_token: []
+  /mentorship/event/{eventId}:
+    delete:
+      tags:
+        - mentorship
+      summary: 'Deletes a specific event'
+      operationId: 'eventDelete'
+      parameters:
+        - in: path
+          name: eventId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: 'Event successfully deleted'
+      security:
+        - bearer_token: []
+  /mentorship/goal/{goalId}:
+    delete:
+      tags:
+        - mentorship
+      summary: 'Deletes a specific goal'
+      operationId: 'goalDelete'
+      parameters:
+        - in: path
+          name: goalId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: 'Event successfully deleted'
+      security:
+        - bearer_token: []
+  /mentorship/task/{taskId}:
+    delete:
+      tags:
+        - mentorship
+      summary: 'Deletes a specific task'
+      operationId: 'taskDelete'
+      parameters:
+        - in: path
+          name: taskId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: 'Event successfully deleted'
+      security:
+        - bearer_token: []
+  
   # PROGRAM
   /program:
     get:
@@ -575,6 +987,73 @@ paths:
       security:
         - bearer_token: []
   
+  # SOCIAL ORGANIZAION
+  /socialOrganization/{socialOrganizationId}/sectors:
+    get:
+      tags:
+        - socialOrganization
+      summary: 'List the sectors of a social organization'
+      operationId: 'listONGSectors'
+      parameters:
+        - in: path
+          name: socialOrganizationId
+          required: true
+          schema:
+            type: number
+            example: 1
+      responses:
+        '200':
+          description: 'List social organization sectors'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SocialOrganizationSectors'
+      security:
+        - bearer_token: []
+    post:
+      tags:
+        - socialOrganization
+      summary: 'Upsert the sectors of a social organization'
+      operationId: 'upsertONGSectors'
+      parameters:
+        - in: path
+          name: socialOrganizationId
+          required: true
+          schema:
+            type: number
+            example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sectorId:
+                  type: number
+                  example: 1
+                ranking:
+                  type: number
+                  description: 'How the social organization sector is ranked from 0 to 5'
+                  example: 5
+                currentlyWorking:
+                  type: string
+                  description: "Field where it's described how this sector currently work in the social organization"
+                  example: 'Nós fazemos um trabalho de marketing basedo nos passos x, y e z, onde o nosso responsável pelo setor gerencia 5 pessoas, etc.'
+                effectiveness:
+                  type: string
+                  description: "Field where it's described how their effective is their effort"
+                  example: 'Embora tenhamos uma grande taxa de conversão nos links das nossas redes sociais, temos pouco retorno nos links de doação e pouco compartilhamento'
+      responses:
+        '200':
+          description: 'Successfully upsert sector'
+      security:
+        - bearer_token: []
+  
   # USER
   /user:
     get:
@@ -718,6 +1197,52 @@ paths:
           description: Internal server error
       security:
         - bearer_token: []
+  /user/picture/banner:
+    patch:
+      tags:
+        - user
+      summary: 'Uploads current user banner image'
+      operationId: 'uploadBanner'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 'Imnage uploaded successfully'
+      security:
+        - bearer_token: []
+  /user/picture/profile:
+    patch:
+      tags:
+        - user
+      summary: 'Uploads current user profile picture'
+      operationId: 'uploadProfilePicture'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 'Imnage uploaded successfully'
+      security:
+        - bearer_token: []
 
   # VOLUNTEER
   /volunteer/apply:
@@ -830,7 +1355,7 @@ paths:
           description: Internal server error 
       security:
         - bearer_token: []   
-        
+  
 components:
   schemas:
     Error:
@@ -853,6 +1378,15 @@ components:
           example: '123441'
         logo:
           $ref: '#/components/schemas/Storage'
+    KnowledgeAreas:
+      type: object
+      properties:
+        sectorId:
+          type: number
+          example: 2
+        sector:
+          type: string
+          example: "leadership"
     MentorshipApplication:
       type: object
       properties:
@@ -866,6 +1400,51 @@ components:
           type: string
           format: 'date-time'
           example: '2023-05-04T14:28:30.000Z'
+        createdAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        updatedAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+    MentorshipEventAttendee:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        accepted:
+          type: boolean
+          example: true
+        invitedAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+        answeredAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-04T14:28:30.000Z'
+    MentorshipGoalTask:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+          example: 'Completar cadastro da organização no sistema x'
+        completed:
+          type: boolean
+          example: false
+        completedBy:
+          type: number
+          description: User id
+          example: null
+        completedAt:
+          type: string
+          format: 'date-time'
+          example: null
         createdAt:
           type: string
           format: 'date-time'
@@ -903,6 +1482,40 @@ components:
         role:
           type: string
           example: 'admin'
+    SocialOrganizationSectors:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        sector:
+          type: string
+          example: sustainability
+        ranking:
+          type: number
+          example: 3
+        currentlyWorking:
+          type: string
+          example: |-
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Phasellus at neque ornare, fringilla lorem ac, volutpat nulla.
+            Maecenas id justo sit amet ipsum convallis condimentum a ultricies elit.
+            Nam at ornare nibh. Maecenas a porta nisl.
+        effectiveness:
+          type: string
+          example: |-
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Phasellus at neque ornare, fringilla lorem ac, volutpat nulla.
+            Maecenas id justo sit amet ipsum convallis condimentum a ultricies elit.
+            Nam at ornare nibh. Maecenas a porta nisl.
+        createdAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-28T19:37:16.000Z'
+        updatedAt:
+          type: string
+          format: 'date-time'
+          example: '2023-05-28T19:37:16.000Z'
     Storage:
       type: object
       properties:
