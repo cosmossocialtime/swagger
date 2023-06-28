@@ -68,6 +68,27 @@ paths:
           description: Internal server error
       security:
         - bearer_token: []
+    delete:
+      tags:
+        - admin
+      summary: Delete user
+      description: Allows ADMINS to delete an user
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+            example: 1
+      responses:
+        '200':
+          description: Deleted successfully
+        '400':
+          description: User not found
+        '500':
+          description: Internal server error
+      security:
+        - bearer_token: []
   /admin/company:
     post:
       tags:
@@ -405,6 +426,120 @@ paths:
         '500':
           description: Internal server error
 
+  # COMPANY
+  /company/{companyId}:
+    get:
+      tags:
+        - company
+      summary: Get company info
+      parameters:
+        - in: path
+          name: companyId
+          schema:
+            type: number
+            example: 1
+          required: true
+      responses:
+        '200':
+          description: Operation successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+  /company/code/{companyCode}:
+    get:
+      tags:
+        - company
+      summary: Get company info by company code
+      parameters:
+        - in: path
+          name: companyCode
+          schema:
+            type: string
+            example: 000000
+          required: true
+      responses:
+        '200':
+          description: Operation successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+  /company/{companyId}/programs:
+    get:
+      tags:
+        - company
+      summary: Get company programs
+      parameters:
+        - in: path
+          name: companyId
+          schema:
+            type: number
+            example: 1
+          required: true
+        - in: query
+          name: PAGE
+          schema:
+            type: number
+            example: 1
+            default: 1
+          required: false
+        - in: query
+          name: PER_PAGE
+          schema:
+            type: number
+            example: 50
+            default: 50
+          required: false
+      responses:
+        '200':
+          description: Operation successfull
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Program'
+                  total:
+                    type: number
+                    example: 10
+                  pages:
+                    type: number
+                    example: 1
+  /company/{companyId}/logo:
+    patch:
+      tags:
+        - company
+      summary: 'Uploads company logo'
+      parameters:
+        - in: path
+          name: companyId
+          schema:
+            type: number
+            example: 1
+          required: true
+      operationId: 'uploadCompanyLogo'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 'Imnage uploaded successfully'
+      security:
+        - bearer_token: []
+  
   # DASHBOARD
   /dashboard:
     get:
@@ -493,69 +628,6 @@ paths:
                             $ref: '#/components/schemas/MentorshipEventAttendee'
       security:
         - bearer_token: []
-  /mentorship/{mentorshipId}/event:
-    post:
-      tags:
-        - mentorship
-      summary: Create a new goal to a mentorship
-      operationId: "createEvent"
-      parameters:
-        - in: path
-          name: mentorshipId
-          schema:
-            type: number
-            example: 1
-          required: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  example: "Metas da próxima semana"
-                description:
-                  type: string
-                  example: "Nessa reunião definiremos as metas da próxima semana, além de discutirmos os pontos positivos e negativos da semana que passou"
-                link:
-                  type: string
-                  format: url
-                  example: "https://meet.google.com/xxx-yyy-zzz"
-                eventAt:
-                  type: string
-                  format: 'date-time'
-                  example: '2023-05-28T12:00:00:000Z'
-                attendees:
-                  type: array
-                  description: 'Array containing the userId from all attendees'
-                  minItems: 1
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: number
-                        example: 1
-              required:
-                - title
-                - description
-                - link
-                - eventAt
-                - attendees
-      responses:
-        '200':
-          description: Goal created successfuly
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: number
-                    example: 1
-      security:
-        - bearer_token: []
   /mentorship/{mentorshipId}/goals:
     get:
       tags:
@@ -598,39 +670,6 @@ paths:
                           type: array
                           items:
                             $ref: '#/components/schemas/MentorshipGoalTask'
-      security:
-        - bearer_token: []
-    post:
-      tags:
-        - mentorship
-      summary: Create a new goal to a mentorship
-      operationId: "createGoal"
-      parameters:
-        - in: path
-          name: mentorshipId
-          schema:
-            type: number
-            example: 1
-          required: true
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-      responses:
-        '200':
-          description: Goal created successfuly
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: number
-                    example: 1
       security:
         - bearer_token: []
   /mentorship/{mentorshipId}/volunteers:
@@ -705,6 +744,144 @@ paths:
                           type: array
                           items:
                             $ref: '#/components/schemas/KnowledgeAreas'
+      security:
+        - bearer_token: []
+  /mentorship/{mentorshipId}/event:
+    post:
+      tags:
+        - mentorship
+      summary: Create a new goal to a mentorship
+      operationId: "createEvent"
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Metas da próxima semana"
+                description:
+                  type: string
+                  example: "Nessa reunião definiremos as metas da próxima semana, além de discutirmos os pontos positivos e negativos da semana que passou"
+                link:
+                  type: string
+                  format: url
+                  example: "https://meet.google.com/xxx-yyy-zzz"
+                eventAt:
+                  type: string
+                  format: 'date-time'
+                  example: '2023-05-28T12:00:00:000Z'
+                attendees:
+                  type: array
+                  description: 'Array containing the userId from all attendees'
+                  minItems: 1
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                        example: 1
+              required:
+                - title
+                - description
+                - link
+                - eventAt
+                - attendees
+      responses:
+        '200':
+          description: Goal created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /mentorship/event/{evenId}/logbook:
+    post:
+      tags:
+        - mentorship
+      summary: 'Creates an event logbook'
+      parameters:
+        - in: path
+          name: evenId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meetingAccomplishments:
+                  type: string
+                  example: "Nessa reunião definimos as metas da próxima semana, além de discutirmos os pontos positivos e negativos da semana que passou"
+                nextMeetingGoals:
+                  type: string
+                  example: "Na próxima reunião revisaremos todos as ações levantadas"
+              required:
+                - meetingAccomplishments
+                - nextMeetingGoals
+      responses:
+        '200':
+          description: Logbook created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /mentorship/{mentorshipId}/goal:
+    post:
+      tags:
+        - mentorship
+      summary: Create a new goal to a mentorship
+      operationId: "createGoal"
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Goal created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
       security:
         - bearer_token: []
   /mentorship/goal/{goalId}/task:
@@ -829,102 +1006,7 @@ paths:
         - bearer_token: []
   
   # PROGRAM
-  /program:
-    get:
-      tags:
-        - program
-      summary: Get all programs available for user company
-      parameters:
-        - in: query
-          name: PAGE
-          schema:
-            type: integer
-            minimum: 1
-        - in: query
-          name: PER_PAGE
-          schema:
-            type: integer
-            maximum: 100
-      responses:
-        '200':
-          description: Successfully retrieved program
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: number
-                      example: 1
-                    name:
-                      type: string
-                      example: 'Programa social 1'
-                    description:
-                      type: string
-                      example: 'Programa de teste'
-                    startDate:
-                      type: string
-                      example: '2023-05-01T03:00:00.000Z'
-                    endDate:
-                      type: string
-                      example: '2024-05-01T03:00:00.000Z'
-                    createdAt:
-                      type: string
-                      example: '2023-05-01T03:00:00.000Z'
-                    updatedAt:
-                      type: string
-                      example: '2023-05-01T03:00:00.000Z'
-        '500':
-          description: Internal server error
-      security:
-        - bearer_token: []
-    post:
-      tags:
-        - program
-      summary: Create new program
-      description: Allows a company employee or an admin to create a new program 
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                companyId:
-                  type: number
-                  example: 1
-                name:
-                  type: string
-                  example: 'Program de teste'
-                description:
-                  type: string
-                  example: 'Program de teste description'
-                startDate:
-                  type: string
-                  format: date
-                  example: '2023-05-01'
-                endDate:
-                  type: string
-                  format: date
-                  example: '2024-05-01'
-      responses:
-        '201':
-          description: 'Program created successfully'
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    default: 'Program created'
-                  id:
-                    type: number
-                    example: 1
-      security:
-        - bearer_token: []
-  /{programId}/applications/socialOrganizations:
+  /program/{programId}/applications/socialOrganizations:
     get:
       tags:
         - program
@@ -955,7 +1037,7 @@ paths:
           description: 'Internal server error'
       security:
         - bearer_token: []
-  /{programId}/applications/volunteers:
+  /program/{programId}/applications/volunteers:
     get:
       tags:
         - program
@@ -986,14 +1068,220 @@ paths:
           description: 'Internal server error'
       security:
         - bearer_token: []
+  /program:
+    post:
+      tags:
+        - program
+      summary: 'Create a new program for a company'
+      description: 'Allows company employees and ADMINS to create a program for a company'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: number
+                  example: 1
+                name:
+                  type: string
+                  example: 'Itau Social Assistência a Infância'
+                description:
+                  type: string
+                  example: |-
+                    Esse programa é voltado em investir em organizações que
+                    cuidam e auxiliam da infância e juventude
+                startDate:
+                  type: string
+                  format: date
+                  example: 2023-06-26
+                endDate:
+                  type: string
+                  format: date
+                  example: 2024-06-26
+                weeklyHours:
+                  type: number
+                  example: 20
+              required:
+                - companyId
+                - name
+                - description
+                - startDate
+                - endDate
+                - weeklyHours
+      responses:
+        '200':
+          description: Program created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /program/{programId}/mentorship:
+    post:
+      tags:
+        - program
+      summary: 'Accepts an ONG to mentor'
+      description: 'Allows company employees and ADMINS to accepts an ONG that applied to join the program'
+      parameters:
+        - in: path
+          name: programId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicantId:
+                  type: number
+                  description: 'Mentorship Applicant ID'
+                  example: 1
+              required:
+                - applicantId
+      responses:
+        '200':
+          description: Mentorship created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /program/mentorship/{mentorshipId}/volunteer:
+    post:
+      tags:
+        - program
+      summary: 'Accepts an user as a volunteer'
+      description: 'Allows company employees and ADMINS to accept users as volunteers'
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicantId:
+                  type: number
+                  description: 'Volunteer Applicant ID'
+                  example: 1
+                role:
+                  $ref: '#/components/schemas/VolunteerRoleEnum'
+              required:
+                - applicantId
+      responses:
+        '200':
+          description: Mentorship created successfuly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                    example: 1
+      security:
+        - bearer_token: []
+  /program/{programId}:
+    patch:
+      tags:
+        - program
+      summary: 'Updates program'
+      parameters:
+        - in: path
+          name: programId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: 'Itau Social Assistência a Infância'
+                description:
+                  type: string
+                  example: |-
+                    Esse programa é voltado em investir em organizações que
+                    cuidam e auxiliam da infância e juventude
+                startDate:
+                  type: string
+                  format: date
+                  example: 2023-06-26
+                endDate:
+                  type: string
+                  format: date
+                  example: 2024-06-26
+                weeklyHours:
+                  type: number
+                  example: 20
+      responses:
+        '200':
+          description: 'Program updated successfully'
+      security:
+        - bearer_token: []
+  /program/{programId}/logo:
+    patch:
+      tags:
+        - program
+      summary: "Updates a program's logo"
+      parameters:
+        - in: path
+          name: programId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 'Program logo updated successfully'
+      security:
+        - bearer_token: []
   
   # SOCIAL ORGANIZAION
-  /socialOrganization/{socialOrganizationId}/sectors:
+  /socialOrganization/{socialOrganizationId}/satellite:
     get:
       tags:
         - socialOrganization
-      summary: 'List the sectors of a social organization'
-      operationId: 'listONGSectors'
+      summary: 'Gets social organization & social organization sectors info'
       parameters:
         - in: path
           name: socialOrganizationId
@@ -1003,18 +1291,25 @@ paths:
             example: 1
       responses:
         '200':
-          description: 'List social organization sectors'
+          description: 'Get successfully'
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SocialOrganizationSectors'
+                allOf:
+                  - $ref: '#/components/schemas/SocialOrganization'
+                  - type: object
+                    properties:
+                      causes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CausesEnum'
+                      sectors:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SocialOrganizationSector'
       security:
         - bearer_token: []
+  /socialOrganization/{socialOrganizationId}/sectors:
     post:
       tags:
         - socialOrganization
@@ -1053,7 +1348,72 @@ paths:
           description: 'Successfully upsert sector'
       security:
         - bearer_token: []
-  
+  /socialOrganization/{socialOrganizationId}:
+    put:
+      tags:
+        - socialOrganization
+      summary: 'Updates social organization data'
+      description: 'Allows ONG collaborators and ADMINS to update a ONG'
+      parameters:
+        - in: path
+          name: socialOrganizationId
+          required: true
+          schema:
+            type: number
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ranking:
+                  type: number
+                  example: 4
+                currentlyWorking:
+                  type: string
+                  example: 'Atualmente esse setor funciona de tal e tal forma'
+                effectiveness:
+                  type: string
+                  example: 'A efetividade é muito boa, trazendo um retorno ...'
+                sector:
+                  $ref: '#/components/schemas/SectorEnum'
+      responses:
+        '200':
+          description: 'Successfully upsert sector'
+      security:
+        - bearer_token: []
+  /socialOrganization/{socialOrganizationId}/logo:
+    patch:
+      tags:
+        - socialOrganization
+      summary: "Updates an ONG's logo"
+      parameters:
+        - in: path
+          name: socialOrganizationId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 'Logo updated successfully'
+      security:
+        - bearer_token: []
+
   # USER
   /user:
     get:
@@ -1068,15 +1428,84 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    allOf:
-                      - $ref: '#/components/schemas/UserSecureData'
-                      - type: object
-                        properties:
-                          role:
-                            $ref: '#/components/schemas/Role'
+                allOf:
+                  - $ref: '#/components/schemas/UserSecureData'
+                  - type: object
+                    properties:
+                      role:
+                        $ref: '#/components/schemas/Role'
+      security:
+        - bearer_token: []
+    put:
+      tags:
+        - user
+      summary: Updates current user information
+      description: Updates current user information using authentication Token
+      operationId: updateUserInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyCode:
+                  type: string
+                  example: '000000'
+                birthdate:
+                  type: string
+                  example: '2023-06-28'
+                gender:
+                  type: string
+                  example: 'Masculino'
+                city:
+                  type: string
+                  example: 'São Paulo'
+                state:
+                  type: string
+                  example: 'São Paulo'
+                country:
+                  type: boolean
+                  example: true
+                byname:
+                  type: string
+                  example: 'João'
+                fullName:
+                  type: string
+                  example: 'João da Silva Fernandes' 
+              required:
+                - birthdate
+                - gender
+                - city
+                - state
+                - country
+                - byname
+                - fullName
+      responses:
+        '200':
+          description: Successfully get user information
+      security:
+        - bearer_token: []
+  /user/programs:
+    get:
+      tags:
+        - user
+      summary: Get available programs
+      responses:
+        '200':
+          description: Successfully get user information
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Program'
+                    - type: object
+                      properties:
+                        applied:
+                          type: boolean
+                          example: true
       security:
         - bearer_token: []
   /user/onboarding:
@@ -1364,6 +1793,8 @@ components:
         message:
           type: string
           description: 'Message describing the error'
+    
+    # ENTITIES
     Company:
       type: object
       properties:
@@ -1377,7 +1808,8 @@ components:
           type: string
           example: '123441'
         logo:
-          $ref: '#/components/schemas/Storage'
+          type: string
+          description: S3 file PreSigned URL (token expires after 1 day)
     KnowledgeAreas:
       type: object
       properties:
@@ -1459,6 +1891,9 @@ components:
         id:
           type: number
           example: 1
+        companyId:
+          type: number
+          example: 1
         name:
           type: string
           example: 'Itau Social para Educação 2.0'
@@ -1473,6 +1908,20 @@ components:
           type: string
           format: date
           example: '2024-04-23'
+        weeklyHours:
+          type: number
+          example: 1
+        logo:
+          type: string
+          description: 'PreSigned URL for program logo image on S3'
+        createdAt:
+          type: string
+          format: timestamp
+          example: '2023-04-23T00:00:00Z'
+        updatedAt:
+          type: string
+          format: timestamp
+          example: '2024-04-23T00:00:00Z'
     Role:
       type: object
       properties:
@@ -1482,7 +1931,53 @@ components:
         role:
           type: string
           example: 'admin'
-    SocialOrganizationSectors:
+    SocialOrganization:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+          example: "ASA"
+        creationDate:
+          type: string
+          format: 'date'
+          example: '2001-01-01'
+        city:
+          type: string
+          example: 'São Paulo'
+        state:
+          type: string
+          example: 'São Paulo'
+        totalCollaborators:
+          type: number
+          example: 28
+        beneficiaries:
+          type: number
+          example: 300
+        annualRevenue:
+          type: number
+          format: float
+          example: 80000.00
+        history:
+          type: string
+          example: 'A fundação começou em XXXX e desde então ...'
+        socialImpact:
+          type: string
+          example: 'Nós atendemos hoje cerca de 100 famílias, ajudando ...'
+        mainChallenges:
+          type: string
+          example: 'Nosso maior desafio é relacionado ao setor financeiro ...'
+        createdAt:
+          type: string
+          format: timestamp
+          example: "2023-06-02T01:24:28.000Z"
+        updatedAt:
+          type: string
+          format: timestamp
+          example: "2023-06-02T01:24:28.000Z"
+    SocialOrganizationSector:
       type: object
       properties:
         id:
@@ -1571,8 +2066,8 @@ components:
           format: date
           example: '1982-01-01'
         country:
-          type: string
-          example: 'Brasil'
+          type: boolean
+          example: true
         state:
           type: string
           example: 'SP'
@@ -1666,6 +2161,48 @@ components:
           type: string
           format: 'date-time'
           example: '2023-05-04T14:28:30.000Z'
+  
+    # ENUMS
+    CausesEnum:
+      type: string
+      enum:
+        - women_rights
+        - domestic_violence
+        - children_with_disability
+        - people_with_disability
+        - blindnees
+        - breast_cancer
+        - children_care
+        - elder_care
+        - poverty
+        - dental_care
+        - world_hunger
+        - hunger
+        - drug_addiction
+        - environmental
+        - health
+        - animal_aid
+        - animal_rights
+        - refugees_aid
+    SectorEnum:
+      type: string
+      enum:
+        - sustainability
+        - leadership
+        - fundraising
+        - impact_assessment
+        - legal
+        - strategics
+        - project_management
+        - marketing
+        - finances
+        - people_management
+    VolunteerRoleEnum:
+      type: string
+      enum:
+        - specialist
+        - pilot
+        - leader
   securitySchemes:
     bearer_token:
       type: http
