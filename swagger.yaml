@@ -922,6 +922,32 @@ paths:
                     example: 1
       security:
         - bearer_token: []
+  /mentorship/{mentorshipId}/currentStep:
+    patch:
+      tags:
+        - mentorship
+      summary: 'Changes the current step of a mentorship'
+      parameters:
+        - in: path
+          name: mentorshipId
+          schema:
+            type: number
+            example: 1
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                step:
+                  $ref: '#/components/schemas/ProgramStepEnum'
+      responses:
+        '200':
+          description: 'Current step changed successfully'
+      security:
+        - bearer_token: []
   /mentorship/task/{taskId}/completed:
     patch:
       tags:
@@ -1103,6 +1129,22 @@ paths:
                 weeklyHours:
                   type: number
                   example: 20
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    minItems: 7
+                    properties:
+                      step:
+                        $ref: '#/components/schemas/ProgramStepEnum'
+                      startDate:
+                        type: string
+                        format: date
+                        example: '2023-07-01'
+                      endDate:
+                        type: string
+                        format: date
+                        example: '2023-08-01'
               required:
                 - companyId
                 - name
@@ -1110,6 +1152,7 @@ paths:
                 - startDate
                 - endDate
                 - weeklyHours
+                - steps
       responses:
         '200':
           description: Program created successfuly
@@ -2105,14 +2148,72 @@ components:
           type: string
           example: 'Nunca fiz nada assim antes'
         profilePicture:
-          $ref: '#/components/schemas/Storage'
+          type: string
+          description: 'PreSigned URL for program logo image on S3'
         banner:
-          $ref: '#/components/schemas/Storage'
+          type: string
+          description: 'PreSigned URL for program logo image on S3'
     VolunteerDashboard:
       type: object
       properties:
         achievements:
           $ref: '#/components/schemas/UserAchievements'
+        company:
+          $ref: '#/components/schemas/Company'
+        currentMentorhip:
+          type: object
+          properties:
+            mentorshipId:
+              type: number
+              example: 1
+            programId:
+              type: number
+              example: 1
+            socialOrganizationId:
+              type: number
+              example: 1
+            currentStepId:
+              type: number
+              example: 1
+            name:
+              type: string
+              example: "Programa Social Eitau para Meio Ambiente"
+            description:
+              type: string
+              example: |-
+                No Programa Mentoria 1, você atuará como mentor@ voluntári@ de uma organização social que atua na causa do meio ambiente
+            startDate:
+              type: string
+              format: date
+              example: "2023-05-28"
+            endDate:
+              type: string
+              format: date
+              example: "2024-05-28"
+            weeklyHours:
+              type: number
+              example: 20
+            logo:
+              type: string
+              description: 'PreSigned URL for program logo image on S3'
+            steps:
+              type: array
+              items:
+                type: object
+                properties:
+                  stepId:
+                    type: number
+                    example: 1
+                  step:
+                    $ref: '#/components/schemas/ProgramStepEnum'
+                  startDate:
+                    type: string
+                    format: date
+                    example: "2023-06-30"
+                  endDate:
+                    type: string
+                    format: date
+                    example: "2023-07-30"
         programs:
           type: array
           items:
@@ -2184,6 +2285,16 @@ components:
         - animal_aid
         - animal_rights
         - refugees_aid
+    ProgramStepEnum:
+      type: string
+      enum:
+        - introduction
+        - satellite_images
+        - crew_meeting
+        - star_meeting
+        - navigation_map
+        - executing_mission
+        - final_meeting
     SectorEnum:
       type: string
       enum:
